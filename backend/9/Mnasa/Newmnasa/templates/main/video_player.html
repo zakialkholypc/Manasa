@@ -1,0 +1,265 @@
+{% extends 'base.html' %} {% load static %} {% block head %}
+<meta name="username" content="{{ request.user.username }}" />
+{% endblock %} {% block content %}
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+/>
+<div class="video-page">
+  <div class="video-container">
+    <div class="video-wrapper">
+      <video id="lesson-video" controls controlsList="nodownload" playsinline>
+        <source src="{{ video_url }}" type="application/x-mpegURL" />
+        Your browser does not support the video tag.
+      </video>
+      <div class="video-overlay"></div>
+      <div class="watermark"></div>
+    </div>
+
+    <div class="video-controls">
+      <button id="fullscreen-btn" class="control-btn">
+        <i class="fas fa-expand"></i>
+      </button>
+      <button id="quality-btn" class="control-btn">
+        <i class="fas fa-cog"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="video-info">
+    <h1 class="lesson-title">{{ lesson.title }}</h1>
+    <div class="lesson-meta">
+      <span class="duration"
+        ><i class="fas fa-clock"></i> {{ lesson.duration }} دقيقة</span
+      >
+      <span class="views"
+        ><i class="fas fa-eye"></i> {{ lesson.views }} مشاهدة</span
+      >
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <span class="progress-text">0% مكتمل</span>
+    </div>
+  </div>
+</div>
+
+<div id="message" class="message"></div>
+
+<style>
+  .video-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f5f5f5;
+  }
+
+  .video-container {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  }
+
+  #lesson-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  .watermark {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .video-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+  }
+
+  .control-btn {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .control-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .video-info {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .lesson-title {
+    margin: 0 0 10px 0;
+    color: #333;
+  }
+
+  .lesson-meta {
+    display: flex;
+    gap: 20px;
+    color: #666;
+    margin-bottom: 15px;
+  }
+
+  .progress-container {
+    margin-top: 15px;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: #007bff;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .progress-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 9999;
+    display: none;
+  }
+
+  /* منع التحديد */
+  .video-container {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  /* إخفاء عناصر التحكم في التحميل */
+  video::-webkit-media-controls {
+    display: none !important;
+  }
+
+  video::-webkit-media-controls-enclosure {
+    display: none !important;
+  }
+</style>
+
+{% endblock %} {% block scripts %}
+<script src="{% static 'js/video_protection.js' %}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const video = document.getElementById("lesson-video");
+    const watermark = document.querySelector(".watermark");
+    const progressFill = document.querySelector(".progress-fill");
+    const progressText = document.querySelector(".progress-text");
+    const fullscreenBtn = document.getElementById("fullscreen-btn");
+    const messageDiv = document.getElementById("message");
+
+    // إضافة العلامة المائية
+    watermark.textContent = `© {{ request.user.username }}`;
+
+    // تحديث التقدم
+    video.addEventListener("timeupdate", function () {
+      const progress = (video.currentTime / video.duration) * 100;
+      progressFill.style.width = `${progress}%`;
+      progressText.textContent = `${Math.round(progress)}% مكتمل`;
+    });
+
+    // زر ملء الشاشة
+    fullscreenBtn.addEventListener("click", function () {
+      if (!document.fullscreenElement) {
+        video.requestFullscreen().catch((err) => {
+          showMessage("حدث خطأ في تفعيل وضع ملء الشاشة");
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // حماية إضافية
+    video.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+      showMessage("لا يمكنك تحميل هذا الفيديو");
+    });
+
+    video.addEventListener("dragstart", function (e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && e.key === "I") ||
+        (e.ctrlKey && e.shiftKey && e.key === "J") ||
+        (e.ctrlKey && e.key === "U")
+      ) {
+        e.preventDefault();
+        showMessage("غير مسموح بفتح أدوات المطور");
+      }
+    });
+
+    function showMessage(message) {
+      messageDiv.textContent = message;
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+  });
+</script>
+{% endblock %}

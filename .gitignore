@@ -1,0 +1,72 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Python/Django
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+*.env
+*.env.*
+*.sqlite3
+/staticfiles/
+/media/
+*.log
+migrations/*
+!migrations/__init__.py
+
+# Node.js/Next.js
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+/.next/
+/out/
+/build
+
+# Testing
+/coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Misc
+.DS_Store
+*.pem
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Env Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Temporary Files
+*.swp
+*.bak
+*.tmp

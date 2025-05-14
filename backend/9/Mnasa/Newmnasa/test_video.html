@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل الفيديو المحمي</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            max-width: 100%;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #lesson-video {
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+            display: block;
+        }
+
+        /* إخفاء عناصر التحكم في التحميل */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+
+        /* منع التحديد */
+        .video-container {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* إضافة طبقة حماية شفافة */
+        .video-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background: transparent;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>مشغل الفيديو المحمي</h1>
+
+        <div class="video-container">
+            <video id="lesson-video" controls controlsList="nodownload" playsinline>
+                <source src="" type="application/x-mpegURL">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="controls">
+            <button onclick="loadVideo()">تحميل الفيديو</button>
+            <button onclick="toggleFullscreen()">ملء الشاشة</button>
+        </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <script src="test_api.js"></script>
+    <script>
+        // حماية الفيديو
+        class VideoProtection {
+            constructor(videoElement) {
+                this.video = videoElement;
+                this.init();
+            }
+
+            init() {
+                // منع النقر بزر الماوس الأيمن
+                this.video.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.showMessage('لا يمكنك تحميل هذا الفيديو');
+                });
+
+                // منع فتح أدوات المطور
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'F12' ||
+                        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+                        (e.ctrlKey && e.key === 'U')) {
+                        e.preventDefault();
+                        this.showMessage('غير مسموح بفتح أدوات المطور');
+                    }
+                });
+
+                // منع نسخ النص
+                document.addEventListener('copy', (e) => {
+                    e.preventDefault();
+                    this.showMessage('لا يمكنك نسخ محتوى هذه الصفحة');
+                });
+
+                // منع سحب وإفلات الفيديو
+                this.video.addEventListener('dragstart', (e) => {
+                    e.preventDefault();
+                });
+
+                // منع التقاط لقطات الشاشة
+                this.video.addEventListener('loadedmetadata', () => {
+                    this.video.style.userSelect = 'none';
+                    this.video.style.webkitUserSelect = 'none';
+                });
+
+                // إضافة علامة مائية ديناميكية
+                this.addWatermark();
+            }
+
+            showMessage(message) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.textContent = message;
+                messageDiv.style.display = 'block';
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            addWatermark() {
+                const watermark = document.createElement('div');
+                watermark.style.cssText = `
+                    position: absolute;
+                    bottom: 10px;
+                    right: 10px;
+                    color: rgba(255,255,255,0.7);
+                    font-size: 14px;
+                    font-family: Arial, sans-serif;
+                    pointer-events: none;
+                    z-index: 100;
+                `;
+                watermark.textContent = `© ${document.querySelector('meta[name="username"]').content}`;
+                this.video.parentElement.style.position = 'relative';
+                this.video.parentElement.appendChild(watermark);
+            }
+        }
+
+        // تهيئة الحماية عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('lesson-video');
+            new VideoProtection(video);
+        });
+
+        // وظائف التحكم
+        function toggleFullscreen() {
+            const video = document.getElementById('lesson-video');
+            if (!document.fullscreenElement) {
+                video.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        async function loadVideo() {
+            try {
+                const response = await fetch('http://localhost:8000/api/lessons/1/video/', {
+                    headers: {
+                        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('فشل في تحميل الفيديو');
+                }
+
+                const data = await response.json();
+                const video = document.getElementById('lesson-video');
+                video.src = data.video_url;
+                video.load();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء تحميل الفيديو');
+            }
+        }
+    </script>
+</body>
+
+</html>
